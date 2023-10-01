@@ -1,5 +1,6 @@
-use maelstrom::echo;
+use maelstrom::*;
 
 fn main() {
-    echo::main().unwrap();
+    // echo::main().unwrap();
+    uuid::main().unwrap();
 }
