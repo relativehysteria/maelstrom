@@ -1,4 +1,4 @@
-use malestrom::echo;
+use maelstrom::echo;
 
 fn main() {
     echo::main().unwrap();
