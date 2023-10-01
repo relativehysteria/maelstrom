@@ -1,6 +1,6 @@
 use maelstrom::*;
 
 fn main() {
-    // echo::main().unwrap();
-    uuid::main().unwrap();
+    // services::echo::main().unwrap();
+    services::uuid::main().unwrap();
 }
