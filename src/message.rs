@@ -2,6 +2,7 @@ use std::io::{Write, BufRead};
 use serde::{de::DeserializeOwned, Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
+/// Message passed around the network. This message is generic over all services
 pub struct Message<Payload> {
     /// A string identifying the node this message came from
     pub src: String,
@@ -10,11 +11,12 @@ pub struct Message<Payload> {
     #[serde(rename = "dest")]
     pub dst: String,
 
-    /// The payload of the message
+    /// The body and payload of the message
     pub body: Body<Payload>,
 }
 
 impl<Payload> Message<Payload> {
+    /// Build a reply out of this message, replying to `id`
     pub fn into_reply(mut self, id: Option<usize>) -> Self {
         // Switch the source and destinations
         let src = self.src;
@@ -28,6 +30,7 @@ impl<Payload> Message<Payload> {
         self
     }
 
+    /// Send the message through `out`
     pub fn send(&self, out: &mut dyn Write) -> anyhow::Result<()>
         where Payload: Serialize,
     {
@@ -38,6 +41,7 @@ impl<Payload> Message<Payload> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+/// Internal body of the message; ID metadata and the internal payload
 pub struct Body<Payload> {
     #[serde(rename = "msg_id")]
     /// A unique integer identifier
@@ -54,25 +58,37 @@ pub struct Body<Payload> {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
+/// Init payload. Used on node initialization
 enum InitPayload {
     Init(Init),
     InitOk,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+/// Initialization metadata
 pub struct Init {
+    /// ID of the node which is receiving this message
     pub node_id: String,
+
+    /// All nodes in the cluster, including the recipient
     pub node_ids: Vec<String>,
 }
 
+/// Trait generic over `Payload` that makes it possible to build
+/// distributed systems.
 pub trait Node<Payload> {
+    /// Given the `init` struct, creates a new `Node` in the cluster
     fn from_init(init: &Init) -> anyhow::Result<Self>
         where Self: Sized;
 
+    /// Single steps through the main event loop of the node.
+    /// The node should handle the incoming `input` message and send the
+    /// appropriate responses through `output`
     fn step(&mut self, input: Message<Payload>, output: &mut dyn Write)
         -> anyhow::Result<()>;
 }
 
+/// Implementation of the main loop generic over a service `Node<Payload>` impl
 pub fn main_loop<P, N>() -> anyhow::Result<()>
 where
     P: DeserializeOwned + core::fmt::Debug,
