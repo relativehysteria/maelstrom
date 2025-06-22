@@ -41,7 +41,7 @@ pub trait Node<Payload> {
     ///
     /// This is unnecessary in a microservice architecture where services are
     /// scaled by nodes (i.e. OS processes), not by threads.
-    fn handle(&mut self, msg: Message<Payload>, out: &mut dyn Write)
+    fn handle(&mut self, msg: Message<Payload>, out: &mut impl Write)
         -> anyhow::Result<()>;
 }
 
@@ -63,14 +63,12 @@ where
 
     // Create the node
     let mut node = match init.body.payload {
-        InitPayload::Init(ref data) => N::from_init(data)?,
+        Some(InitPayload::Init(ref data)) => N::from_init(data)?,
         _ => panic!("Initial is has no valid init payload"),
     };
 
     // Reply with OK
-    let reply = init.into_reply(InitPayload::InitOk);
-    let reply = serde_json::to_string(&reply)?;
-    stdout.write(reply.as_bytes())?;
+    init.into_reply(InitPayload::InitOk).send(&mut stdout)?;
 
     // Because we have used `stdin.lines()` above, we have to re-lock stdin
     let stdin = std::io::stdin().lock();

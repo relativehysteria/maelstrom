@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::sync::atomic::{AtomicU32, Ordering};
 use serde::{Serialize, Deserialize};
 
@@ -31,9 +32,19 @@ impl<Payload> Message<Payload> {
             body: Body {
                 id: Some(get_unique_id()),
                 reply_id: self.body.id,
-                payload: p,
+                payload: Some(p),
             },
         }
+    }
+
+    /// Send this message to `output`
+    pub fn send(self, output: &mut impl Write) -> anyhow::Result<()>
+    where
+        Payload: Serialize
+    {
+        serde_json::to_writer(&mut *output, &self)?;
+        output.write(b"\n")?;
+        Ok(())
     }
 }
 
@@ -41,14 +52,18 @@ impl<Payload> Message<Payload> {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Body<Payload> {
     /// Unique identifier of this message
-    #[serde(rename = "msg_id")]
+    #[serde(rename = "msg_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<u32>,
 
     /// For request/response, the message ID of the request
-    #[serde(rename = "in_reply_to")]
+    #[serde(rename = "in_reply_to", skip_serializing_if = "Option::is_none")]
     pub reply_id: Option<u32>,
 
-    /// Help with this
+    /// The payload of the packet.
+    ///
+    /// This is an option because that allows us to take out the payload from an
+    /// incoming packet and then use `into_reply()` to create a response using
+    /// the original payload.
     #[serde(flatten)]
-    pub payload: Payload,
+    pub payload: Option<Payload>,
 }
