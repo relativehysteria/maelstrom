@@ -1,3 +1,5 @@
+//! good old' echo
+
 use std::io::Write;
 use serde::{Serialize, Deserialize};
 use crate::message::Message;
@@ -5,7 +7,7 @@ use crate::node::{Node, NodeInfo};
 
 
 /// Payload for echo messages
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum EchoPayload {
     Echo(EchoData),
@@ -13,7 +15,7 @@ pub enum EchoPayload {
 }
 
 /// The data of an echo and echo ok message
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct EchoData {
     echo: String,
 }
