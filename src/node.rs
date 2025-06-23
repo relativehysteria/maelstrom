@@ -30,7 +30,7 @@ pub struct NodeInfo {
 
 pub trait Node<Payload> {
     /// Given the `init` node information, creates a new node in the cluster
-    fn from_init(init: &NodeInfo) -> anyhow::Result<Self>
+    fn from_init(init: NodeInfo) -> anyhow::Result<Self>
         where Self: Sized;
 
     /// Handle an input `msg` and send a reply to `out`
@@ -58,12 +58,12 @@ where
 
     // Wait for the init payload to come
     let init = stdin.lines().next().expect("Couldn't read line from stdin")?;
-    let init: Message<InitPayload> = serde_json::from_str(&init)
+    let mut init: Message<InitPayload> = serde_json::from_str(&init)
         .expect("Couldn't parse the initial message");
 
     // Create the node
-    let mut node = match init.body.payload {
-        Some(InitPayload::Init(ref data)) => N::from_init(data)?,
+    let mut node = match init.body.payload.take() {
+        Some(InitPayload::Init(data)) => N::from_init(data)?,
         _ => panic!("Initial is has no valid init payload"),
     };
 

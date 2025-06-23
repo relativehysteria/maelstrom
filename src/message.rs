@@ -24,17 +24,23 @@ pub struct Message<Payload> {
 }
 
 impl<Payload> Message<Payload> {
-    /// Create a reply to this message
-    pub fn into_reply<NewPayload>(self, p: NewPayload) -> Message<NewPayload> {
-        Message {
-            src: self.dst,
-            dst: self.src,
+    /// Create a new message
+    pub fn new(src: String, dst: String, reply_id: Option<u32>,
+            payload: Payload) -> Self {
+        Self {
+            src: src,
+            dst: dst,
             body: Body {
+                payload: Some(payload),
                 id: Some(get_unique_id()),
-                reply_id: self.body.id,
-                payload: Some(p),
+                reply_id,
             },
         }
+    }
+
+    /// Create a reply to this message
+    pub fn into_reply<NewPayload>(self, p: NewPayload) -> Message<NewPayload> {
+        Message::new(self.dst, self.src, self.body.id, p)
     }
 
     /// Send this message to `output`
