@@ -15,7 +15,7 @@ use crate::node::{Node, NodeInfo};
 /// Payload for UUID messages
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum UuidPayload {
+pub enum Payload {
     Generate,
     GenerateOk(Uuid)
 }
@@ -47,24 +47,24 @@ impl UuidNode {
     }
 }
 
-impl Node<UuidPayload> for UuidNode {
-    fn from_init(_init: &NodeInfo) -> anyhow::Result<Self>
+impl Node<Payload> for UuidNode {
+    fn from_init(_init: NodeInfo) -> anyhow::Result<Self>
         where Self: Sized
     {
         Ok(UuidNode)
     }
 
-    fn handle(&mut self, msg: Message<UuidPayload>, out: &mut impl Write)
+    fn handle(&mut self, msg: Message<Payload>, out: &mut impl Write)
         -> anyhow::Result<()>
     {
-        // Only reply to generate requests
+        // Only reply to `generate` requests
         match msg.body.payload {
-            Some(UuidPayload::Generate) => (),
+            Some(Payload::Generate) => (),
             _ => return Ok(()),
         };
 
         // Create a reply and send it
-        let reply = UuidPayload::GenerateOk(Uuid { id: UuidNode::uuid() });
+        let reply = Payload::GenerateOk(Uuid { id: UuidNode::uuid() });
         msg.into_reply(reply).send(&mut *out)?;
 
         Ok(())
@@ -72,6 +72,6 @@ impl Node<UuidPayload> for UuidNode {
 }
 
 pub fn run() {
-    crate::node::main_loop::<UuidPayload, UuidNode>()
+    crate::node::main_loop::<Payload, UuidNode>()
         .expect("Uuid service failed");
 }
